@@ -7,6 +7,7 @@ from sqlalchemy import func
 import os
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from .chatbot import chat_with_user 
 
@@ -129,3 +130,17 @@ def chat_endpoint(request: ChatRequest):
 @app.get("/")
 def root():
     return {"message": "Book Discussion AI server is running!"}
+
+# Allow your frontend (React) to access the API
+origins = [
+    "http://localhost:3000",  # your React dev server
+    # "http://127.0.0.1:3000",  # optional alternative
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # allow POST, GET, OPTIONS, etc.
+    allow_headers=["*"],
+)

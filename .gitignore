@@ -1,0 +1,3 @@
+server/books.csv
+server/book_index.faiss
+server/book_embeddings.pkl
