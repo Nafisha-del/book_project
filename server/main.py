@@ -5,9 +5,10 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, F
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Session
 from sqlalchemy import func
 import os
-from fastapi import FastAPI
+
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from .chatbot import chat_with_user
+from .chatbot import chat_with_user 
 
 
 # Database setup
@@ -41,10 +42,11 @@ class Review(Base):
 Base.metadata.create_all(bind=engine)
 
 # FastAPI app
-app = FastAPI()
+app = FastAPI(title="Book Discussion AI")
 
 class ChatRequest(BaseModel):
     prompt: str
+    max_tokens: int = 200
 
 # Dependency for DB session
 def get_db():
@@ -115,7 +117,15 @@ def recommendations(limit: int = 5, db: Session = Depends(get_db)):
     books = [db.query(Book).filter(Book.id == b.book_id).first() for b in top_books]
     return [{"id": b.id, "title": b.title, "author": b.author} for b in books]
 
-@app.post("/chat")
-async def chat_endpoint(request: ChatRequest):
-    response = chat_with_user(request.prompt)
+# Chat endpoint
+@app.post("/chat/")
+def chat_endpoint(request: ChatRequest):
+    if not request.prompt:
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+    response = chat_with_user(request.prompt, max_new_tokens=request.max_tokens)
     return {"response": response}
+
+# Simple health check
+@app.get("/")
+def root():
+    return {"message": "Book Discussion AI server is running!"}
