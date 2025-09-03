@@ -121,6 +121,18 @@ def get_reviews(book_id: int = Query(...), db: Session = Depends(get_db)):
     reviews = db.query(Review).filter(Review.book_id == book_id).all()
     return reviews
 
+@app.get("/reviews/latest", response_model=List[ReviewOut])
+def get_latest_reviews(db: Session = Depends(get_db)):
+    reviews = (
+        db.query(Review, Book.title.label("book_title"))
+        .join(Book)
+        .order_by(Review.created_at.desc())
+        .limit(5)
+        .all()
+    )
+    return [{"id": r.Review.id, "book_id": r.Review.book_id, "rating": r.Review.rating,
+             "text": r.Review.text, "book_title": r.book_title} for r in reviews]
+
 @app.get("/recommendations")
 def recommendations(limit: int = 5, db: Session = Depends(get_db)):
     # Calculate average rating per book
