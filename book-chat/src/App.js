@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import Chat from "./components/Chat";
 import BookList from "./components/BookList";
+import Reviews from "./components/Reviews";
+import LatestReviews from "./components/LatestReviews";
 
 function App() {
-  const [view, setView] = useState("chat"); // 'chat' or 'books'
+  const [view, setView] = useState("chat"); // 'chat', 'books', 'reviews'
 
   return (
     <div
@@ -15,7 +17,14 @@ function App() {
       }}
     >
       {/* Navigation Buttons */}
-      <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginBottom: "20px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "10px",
+          marginBottom: "20px",
+        }}
+      >
         <button
           onClick={() => setView("chat")}
           style={{
@@ -27,7 +36,6 @@ function App() {
             fontWeight: "bold",
             cursor: "pointer",
             fontSize: "16px",
-            transition: "background-color 0.3s",
           }}
         >
           Chat
@@ -43,16 +51,47 @@ function App() {
             fontWeight: "bold",
             cursor: "pointer",
             fontSize: "16px",
-            transition: "background-color 0.3s",
           }}
         >
           Books List
         </button>
+        <button
+          onClick={() => setView("reviews")}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "20px",
+            border: "none",
+            backgroundColor: view === "reviews" ? "#4A90E2" : "#E0E0E0",
+            color: view === "reviews" ? "#fff" : "#000",
+            fontWeight: "bold",
+            cursor: "pointer",
+            fontSize: "16px",
+          }}
+        >
+          Write Reviews
+        </button>
+        <button
+          onClick={() => setView("latest")}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "20px",
+            border: "none",
+            backgroundColor: view === "latest" ? "#4A90E2" : "#E0E0E0",
+            color: view === "latest" ? "#fff" : "#000",
+            fontWeight: "bold",
+            cursor: "pointer",
+            fontSize: "16px",
+          }}
+        >
+          Latest Reviews
+        </button>
       </div>
 
-      {/* Render selected view */}
+      {/* Render Selected View */}
       {view === "chat" && <Chat />}
       {view === "books" && <BookList />}
+      {view === "reviews" && <Reviews />}
+      {view === "latest" && <LatestReviews />}
     </div>
   );
 }

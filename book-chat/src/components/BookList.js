@@ -3,12 +3,14 @@ import axios from "axios";
 
 export default function BookList() {
   const [books, setBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(25);
   const [totalBooks, setTotalBooks] = useState(0);
-  const [selectedBook, setSelectedBook] = useState(null); // for modal
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -17,9 +19,8 @@ export default function BookList() {
       try {
         const response = await axios.get(`http://127.0.0.1:8000/books`);
         setTotalBooks(response.data.length);
-        const start = (page - 1) * pageSize;
-        const paginated = response.data.slice(start, start + pageSize);
-        setBooks(paginated);
+        setBooks(response.data);
+        setFilteredBooks(response.data);
       } catch (err) {
         setError("Failed to fetch books.");
       } finally {
@@ -27,9 +28,20 @@ export default function BookList() {
       }
     };
     fetchBooks();
-  }, [page, pageSize]);
+  }, []);
+
+  // Filter books whenever searchTerm changes
+  useEffect(() => {
+    const filtered = books.filter((book) =>
+      book.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredBooks(filtered);
+    setPage(1); // Reset to first page
+    setTotalBooks(filtered.length);
+  }, [searchTerm, books]);
 
   const totalPages = Math.ceil(totalBooks / pageSize);
+  const paginatedBooks = filteredBooks.slice((page - 1) * pageSize, page * pageSize);
 
   if (loading) return <p>Loading books...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
@@ -45,7 +57,23 @@ export default function BookList() {
     >
       <h2 style={{ textAlign: "center", color: "#4A90E2" }}>Books Collection</h2>
 
-      {books.length === 0 ? (
+      {/* Search Box */}
+      <input
+        type="text"
+        placeholder="Search for a book..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "10px",
+          marginBottom: "20px",
+          borderRadius: "8px",
+          border: "1px solid #ccc",
+          fontSize: "16px",
+        }}
+      />
+
+      {paginatedBooks.length === 0 ? (
         <p style={{ textAlign: "center" }}>No books available.</p>
       ) : (
         <>
@@ -56,7 +84,7 @@ export default function BookList() {
               gap: "16px",
             }}
           >
-            {books.map((book) => (
+            {paginatedBooks.map((book) => (
               <div
                 key={book.id}
                 onClick={() => setSelectedBook(book)}
