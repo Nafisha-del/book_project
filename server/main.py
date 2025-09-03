@@ -1,14 +1,12 @@
+import os
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi import Query 
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, func
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Session
 from sqlalchemy import func
-import os
-
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from .chatbot import chat_with_user 
 
 
@@ -23,10 +21,13 @@ class Book(Base):
     __tablename__ = "books"
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
-    author = Column(String, nullable=False)
-    synopsis = Column(Text)
-    isbn = Column(String)
-    url = Column(String)
+    authors = Column(String, nullable=False)
+    description = Column(Text)
+    category = Column(String)
+    publisher = Column(String)
+    price = Column(String)  # keep as string if it includes $ symbol
+    publish_month = Column(String)
+    publish_year = Column(Integer)
     created_at = Column(DateTime, server_default=func.now())
     reviews = relationship("Review", back_populates="book")
 
@@ -61,10 +62,13 @@ def get_db():
 # Schemas
 class BookCreate(BaseModel):
     title: str
-    author: str
-    synopsis: Optional[str]
-    isbn: Optional[str]
-    url: Optional[str]
+    authors: str
+    description: Optional[str]
+    category: Optional[str]
+    publisher: Optional[str]
+    price: Optional[str]
+    publish_month: Optional[str]
+    publish_year: Optional[int]
 
 class BookOut(BookCreate):
     id: int
@@ -82,7 +86,8 @@ class ReviewOut(ReviewCreate):
         orm_mode = True
 
 
-# Routes
+# ROUTES
+# Post new books
 @app.post("/books", response_model=BookOut)
 def create_book(book: BookCreate, db: Session = Depends(get_db)):
     new_book = Book(**book.dict())
@@ -91,10 +96,12 @@ def create_book(book: BookCreate, db: Session = Depends(get_db)):
     db.refresh(new_book)
     return new_book
 
+# Get books list
 @app.get("/books", response_model=List[BookOut])
 def get_books(db: Session = Depends(get_db)):
     return db.query(Book).all()
 
+# Post reviews for a book
 @app.post("/reviews", response_model=ReviewOut)
 def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
     if not db.query(Book).filter(Book.id == review.book_id).first():
@@ -104,6 +111,15 @@ def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_review)
     return new_review
+
+# Get reviews for a specific book
+@app.get("/reviews", response_model=List[ReviewOut])
+def get_reviews(book_id: int = Query(...), db: Session = Depends(get_db)):
+    """
+    Fetch all reviews for a given book by book_id
+    """
+    reviews = db.query(Review).filter(Review.book_id == book_id).all()
+    return reviews
 
 @app.get("/recommendations")
 def recommendations(limit: int = 5, db: Session = Depends(get_db)):
@@ -134,7 +150,7 @@ def root():
 # Allow your frontend (React) to access the API
 origins = [
     "http://localhost:3000",  # your React dev server
-    # "http://127.0.0.1:3000",  # optional alternative
+    "http://127.0.0.1:3000",  # optional alternative
 ]
 
 app.add_middleware(
